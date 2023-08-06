@@ -30,7 +30,7 @@ namespace MichaelKappel.Repositories.SqlRepositoryBase.Models
             this.PageRecordCount = (remainingRecordCount > paging.PageSize) ? paging.PageSize : totalRecordCount - reordsInPreviousPage;
             this.PageIndex = paging.PageIndex;
             this.PageSize = paging.PageSize;
-            this.PageCount = (Int32)Math.Floor(TotalRecordCount / (decimal)PageSize);
+            this.PageCount = (Int32)Math.Ceiling(TotalRecordCount / (decimal)PageSize);
 
             if (PageIndex > 0)
             {

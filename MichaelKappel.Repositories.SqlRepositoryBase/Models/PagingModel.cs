@@ -12,13 +12,20 @@ namespace MichaelKappel.Repositories.SqlRepositoryBase.Models
     {
         public PagingModel()
         {
-            PageIndex = 0;
-            PageSize = 100;
+            this.PageIndex = 0;
+            this.PageSize = 100;
         }
+
+        public PagingModel(IPaging paging)
+        {
+            this.PageIndex = paging.PageIndex;
+            this.PageSize = paging.PageSize;
+        }
+
         public PagingModel(int pageIndex, int pageSize)
         {
-            PageIndex = pageIndex;
-            PageSize = pageSize;
+            this.PageIndex = pageIndex;
+            this.PageSize = pageSize;
         }
 
         public int PageIndex { get; set; }

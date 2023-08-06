@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace MichaelKappel.Repository.Interfaces.Bases
 {
-    public interface IRepositoryList<T>
+    public interface IRepositoryList<TResult>
     {
-        IList<T> List();
+        IList<TResult> List();
     }
     public interface IRepositoryList<TResult, TKey>
     {

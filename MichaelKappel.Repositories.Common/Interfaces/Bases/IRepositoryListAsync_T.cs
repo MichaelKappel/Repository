@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 
 namespace MichaelKappel.Repository.Interfaces.Bases
 {
-    public interface IRepositoryListAsync<T>
+    public interface IRepositoryListAsync<TResult>
     {
-        Task<IList<T>> ListAsync();
+        Task<IList<TResult>> ListAsync();
     }
     public interface IRepositoryListAsync<TResult, TKey>
     {

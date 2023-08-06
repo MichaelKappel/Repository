@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 using System.Reflection;
 using MichaelKappel.Repository.Interfaces;
 using MichaelKappel.Repository.Interfaces.Models;
-using MichaelKappel.Repositories.Common.Models;
+using MichaelKappel.Repositories.SqlRepositoryBase.Models;
 
 namespace MichaelKappel.Repository.Bases
 {
