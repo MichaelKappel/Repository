@@ -1,2 +1,2 @@
 # Repository
-Simple Generic Repository Pattern for ADO.net AND Entity Framework
+Michael Kappel's simple Generic Repository Pattern for ADO.net AND Entity Framework
