@@ -1,0 +1,49 @@
+﻿@using ExampleImplementation.Website.Models.ViewModels
+
+@model PaggingGridControlViewModel
+
+<table class="border table table-sm table-striped">
+    <thead>
+        <tr>
+            <td colspan="17">
+                    @Html.Partial("_PaggingControl", Model)
+            </td>
+        </tr>
+        <tr>
+            @foreach (var property in Model.Results.GetType().GetProperties())
+            {
+                <th>@property.Name</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Results.Count > 0)
+        {
+            @for (var i = 0; i < Model.Results.Count; i++)
+            {
+                <tr>
+                    @foreach (var property in Model.Results[i].GetType().GetProperties())
+                    {
+                        <td>
+                            @try
+                            {
+                                @property.GetValue(Model.Results[i])
+                            }
+                            catch (Exception ex)
+                            {
+                                <span>@ex.Message</span>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        }
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="17">
+                @Html.Partial("_PaggingControl", Model)
+            </td>
+        </tr>
+    </tfoot>
+</table>

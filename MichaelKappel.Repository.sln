@@ -9,15 +9,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MichaelKappel.Repositories.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{323A3529-78DD-4404-8052-6791DCB86B66}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MichaelKappel.Repositories.EntityFrameworkRepositoryBase", "MichaelKappel.Repositories.EntityFrameworkRepositoryBase\MichaelKappel.Repositories.EntityFrameworkRepositoryBase.csproj", "{E4294278-A033-4ED0-8AA6-1957130CC34C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MichaelKappel.Repositories.EntityFrameworkRepositoryBase", "MichaelKappel.Repositories.EntityFrameworkRepositoryBase\MichaelKappel.Repositories.EntityFrameworkRepositoryBase.csproj", "{E4294278-A033-4ED0-8AA6-1957130CC34C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleImplementation.Repositories", "ExampleImplementation.Repositories\ExampleImplementation.Repositories.csproj", "{EDBC2711-5AB4-4AC5-BD7D-B96109521F2D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExampleImplementation.Repositories", "ExampleImplementation.Repositories\ExampleImplementation.Repositories.csproj", "{EDBC2711-5AB4-4AC5-BD7D-B96109521F2D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleImplementation.ConsoleApp", "ExampleImplementation.ConsoleApp\ExampleImplementation.ConsoleApp.csproj", "{BADED2E8-F7E8-44CD-A671-6A3D11372663}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExampleImplementation.ConsoleApp", "ExampleImplementation.ConsoleApp\ExampleImplementation.ConsoleApp.csproj", "{BADED2E8-F7E8-44CD-A671-6A3D11372663}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MichaelKappel.Repositories.SqlRepositoryBase.Tests", "MichaelKappel.Repositories.SqlRepositoryBase.Tests\MichaelKappel.Repositories.SqlRepositoryBase.Tests.csproj", "{4764EEEF-224C-4B0C-ABD0-5DF5B0A84D7B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MichaelKappel.Repositories.SqlRepositoryBase.Tests", "MichaelKappel.Repositories.SqlRepositoryBase.Tests\MichaelKappel.Repositories.SqlRepositoryBase.Tests.csproj", "{4764EEEF-224C-4B0C-ABD0-5DF5B0A84D7B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MichaelKappel.Repositories.EntityFrameworkRepositoryBase.Tests", "MichaelKappel.Repositories.EntityFrameworkRepositoryBase.Tests\MichaelKappel.Repositories.EntityFrameworkRepositoryBase.Tests.csproj", "{905E1350-990E-4B28-BFDF-DD7D7804B0C9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MichaelKappel.Repositories.EntityFrameworkRepositoryBase.Tests", "MichaelKappel.Repositories.EntityFrameworkRepositoryBase.Tests\MichaelKappel.Repositories.EntityFrameworkRepositoryBase.Tests.csproj", "{905E1350-990E-4B28-BFDF-DD7D7804B0C9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleImplementation.Website", "ExampleImplementation.Website\ExampleImplementation.Website.csproj", "{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +55,10 @@ Global
 		{905E1350-990E-4B28-BFDF-DD7D7804B0C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{905E1350-990E-4B28-BFDF-DD7D7804B0C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{905E1350-990E-4B28-BFDF-DD7D7804B0C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -60,6 +66,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{EDBC2711-5AB4-4AC5-BD7D-B96109521F2D} = {323A3529-78DD-4404-8052-6791DCB86B66}
 		{BADED2E8-F7E8-44CD-A671-6A3D11372663} = {323A3529-78DD-4404-8052-6791DCB86B66}
+		{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93} = {323A3529-78DD-4404-8052-6791DCB86B66}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A2AAC462-1D97-4763-9AA4-8808A6A8C574}

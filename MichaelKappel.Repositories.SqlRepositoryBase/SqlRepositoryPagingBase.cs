@@ -13,11 +13,13 @@ using System.Reflection;
 using MichaelKappel.Repository.Interfaces;
 using MichaelKappel.Repository.Interfaces.Models;
 using MichaelKappel.Repositories.SqlRepositoryBase.Models;
+using System.Runtime.Caching;
 
 namespace MichaelKappel.Repository.Bases
 {
     public abstract class SqlRepositoryPagingBase<T> : SqlRepositoryBase<T> where T : class
     {
+        private ObjectCache cache = MemoryCache.Default;
 
         protected internal string SqlPaging = $" OFFSET @PageIndex ROWS FETCH NEXT @PageSize ROWS ONLY";
 
@@ -29,21 +31,23 @@ namespace MichaelKappel.Repository.Bases
         {
         }
 
-
-
-        private Task<int> GetRecordCountAsync(string sql, SqlParameter[] parameters)
+        private (string Sql, SqlParameter[] Parameters) GetRecordCountQuery(string sql, SqlParameter[] parameters)
         {
-            return Task<int>.Factory.StartNew(() =>
+
+            List<SqlParameter> countParameters = new();
+            foreach (SqlParameter p in parameters)
             {
-                return GetRecordCount(sql, parameters);
-            });
-        }
+                countParameters.Add(new SqlParameter(p.ParameterName, p.Value));
+            }
 
-        private int GetRecordCount(string sql, SqlParameter[] parameters)
-        {
             string innerQuery = sql.Replace("  ", " ");
 
-            innerQuery = Regex.Replace(innerQuery, @"(?i)\bSELECT\b(?>[^()]|\((?<Depth>)|\)(?<-Depth>))*(?(Depth)(?!))\bFROM\b", "SELECT 1 AS FakeColumn FROM", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            Match match = Regex.Match(innerQuery, @"(?i)\bSELECT\b(?>[^()]|\((?<Depth>)|\)(?<-Depth>))*(?(Depth)(?!))\bFROM\b", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                innerQuery = innerQuery.Remove(match.Index, match.Length)
+                                         .Insert(match.Index, "SELECT 1 AS FakeColumn FROM");
+            }
 
             string sqlOrderBy = "ORDER BY";
             if (innerQuery.Contains(sqlOrderBy, StringComparison.OrdinalIgnoreCase))
@@ -55,8 +59,81 @@ namespace MichaelKappel.Repository.Bases
 
             string countSql = @$"SELECT COUNT(cteRecordCount.FakeColumn) FROM ({innerQuery}) AS cteRecordCount";
 
+            return (countSql, countParameters.ToArray());
+        }
 
-            return Execute(countSql, CommandType.Text, parameters);
+
+        private int GetRecordCount(string sql, SqlParameter[] parameters, bool isCountCached = true)
+        {
+            if (isCountCached)
+            {
+                string cacheKey = GenerateCacheKey(sql, parameters);
+
+                if (cache.Contains(cacheKey))
+                {
+                    return (int)cache.Get(cacheKey);
+                }
+                else
+                {
+                    int recordCount = ExecuteCountQuery(sql, parameters);
+                    CacheItemPolicy cachePolicy = new CacheItemPolicy
+                    {
+                        SlidingExpiration = TimeSpan.FromHours(1)
+                    };
+                    cache.Add(cacheKey, recordCount, cachePolicy);
+                    return recordCount;
+                }
+            }
+            else
+            {
+                return ExecuteCountQuery(sql, parameters);
+            }
+        }
+
+        private int ExecuteCountQuery(string sql, SqlParameter[] parameters)
+        {
+            (string Sql, SqlParameter[] Parameters) countingQuery = GetRecordCountQuery(sql, parameters);
+            return ExecuteScalar<int>(countingQuery.Sql, CommandType.Text, countingQuery.Parameters);
+        }
+
+        private async Task<int> ExecuteCountQueryAsync(string sql, SqlParameter[] parameters)
+        {
+            (string Sql, SqlParameter[] Parameters) countingQuery = GetRecordCountQuery(sql, parameters);
+
+            return await ExecuteScalarAsync<int>(countingQuery.Sql, CommandType.Text, countingQuery.Parameters);
+        }
+
+        private string GenerateCacheKey(string sql, SqlParameter[] parameters)
+        {
+            string parameterKey = string.Join("_", parameters.Select(p => p.ParameterName + "=" + p.Value));
+            return sql + "_" + parameterKey;
+        }
+
+        private async Task<int> GetRecordCountAsync(string sql, SqlParameter[] parameters, bool isCountCached = true)
+        {
+            if (isCountCached)
+            {
+                string cacheKey = GenerateCacheKey(sql, parameters);
+
+                if (cache.Contains(cacheKey))
+                {
+                    return (int)cache.Get(cacheKey);
+                }
+                else
+                {
+                    int recordCount = await ExecuteCountQueryAsync(sql, parameters);
+                    CacheItemPolicy cachePolicy = new CacheItemPolicy
+                    {
+                        SlidingExpiration = TimeSpan.FromHours(1)
+                    };
+                    cache.Add(cacheKey, recordCount, cachePolicy);
+                    return recordCount;
+                }
+            }
+            else
+            {
+                return await ExecuteCountQueryAsync(sql, parameters);
+            }
         }
 
         protected void AddPaging(IPaging pageing, ref CommandType commandType, ref string sql, ref SqlParameter[] parameters)
@@ -87,7 +164,7 @@ namespace MichaelKappel.Repository.Bases
 
             IList<T> rawResults = GetModels(sql, commandType, parameters.ToArray());
 
-            return new PagingResultModel<T>(pageing, totalRecordCount, rawResults);
+            return new PagingResultsModel<T>(pageing, totalRecordCount, rawResults);
         }
 
         protected virtual async Task<IPagingResults<T>> GetPagingResultsAsync(IPaging pageing, string sql, CommandType commandType, params SqlParameter[] parameters)
@@ -100,7 +177,7 @@ namespace MichaelKappel.Repository.Bases
 
             await Task.WhenAll(totalRecordCount, rawResults);
 
-            return new PagingResultModel<T>(pageing, await totalRecordCount, await rawResults);
+            return new PagingResultsModel<T>(pageing, await totalRecordCount, await rawResults);
         }
     }
 }

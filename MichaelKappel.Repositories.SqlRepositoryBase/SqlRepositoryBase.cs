@@ -94,6 +94,7 @@ namespace MichaelKappel.Repository.Bases
                 using (SqlCommand command = new SqlCommand(storedProcedure, connection))
                 {
                     command.CommandType = commandType;
+                    command.CommandTimeout = 600;
                     if (parameters != null && parameters.Count() > 0)
                     {
                         foreach (var parameter in parameters)
@@ -171,6 +172,7 @@ namespace MichaelKappel.Repository.Bases
                 using (SqlCommand command = new SqlCommand(sql, connection))
                 {
                     command.CommandType = commandType;
+                    command.CommandTimeout = 600;
                     if (parameters != null && parameters.Count() > 0)
                     {
                         foreach (var parameter in parameters)
@@ -182,6 +184,8 @@ namespace MichaelKappel.Repository.Bases
                     connection.Open();
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
+                        //try
+                        //{
                         if (reader.HasRows)
                         {
                             if (HasError(reader))
@@ -195,12 +199,21 @@ namespace MichaelKappel.Repository.Bases
                                 results.Add(CreateInfoFromReader(reader));
                             }
                         }
+                        //}
+                        //catch (Exception ex)
+                        //{
+                        //    throw ex;
+                        //}
+                        //finally
+                        //{
+                        //    reader.Close();
+                        //}
                     }
                 }
             }
             return results ?? new List<T>();
         }
-        protected virtual int Execute(string sql, CommandType commandType, params SqlParameter[] parameters)
+        protected virtual int ExecuteNonQuery(string sql, CommandType commandType, params SqlParameter[] parameters)
         {
             int result = default;
             using (SqlConnection connection = GetSqlConnection())
@@ -208,6 +221,7 @@ namespace MichaelKappel.Repository.Bases
                 using (SqlCommand command = new SqlCommand(sql, connection))
                 {
                     command.CommandType = commandType;
+                    command.CommandTimeout = 600;
                     if (parameters != null && parameters.Count() > 0)
                     {
                         foreach (var parameter in parameters)
@@ -222,9 +236,84 @@ namespace MichaelKappel.Repository.Bases
             }
             return result;
         }
+
+        protected virtual async Task<int> ExecuteNonQueryAsync(string sql, CommandType commandType, params SqlParameter[] parameters)
+        {
+            int result = default;
+            using (SqlConnection connection = GetSqlConnection())
+            {
+                using (SqlCommand command = new SqlCommand(sql, connection))
+                {
+                    command.CommandType = commandType;
+                    command.CommandTimeout = 600;
+                    if (parameters != null && parameters.Count() > 0)
+                    {
+                        foreach (var parameter in parameters)
+                        {
+                            command.Parameters.Add(parameter);
+                        }
+                    }
+
+                    connection.Open();
+                    result = await command.ExecuteNonQueryAsync();
+                }
+            }
+            return result;
+        }
+
+
+        protected virtual Ts ExecuteScalar<Ts>(string sql, CommandType commandType, params SqlParameter[] parameters)
+        {
+            Ts result = default;
+            using (SqlConnection connection = GetSqlConnection())
+            {
+                using (SqlCommand command = new SqlCommand(sql, connection))
+                {
+                    command.CommandType = commandType;
+                    command.CommandTimeout = 600;
+                    if (parameters != null && parameters.Count() > 0)
+                    {
+                        foreach (var parameter in parameters)
+                        {
+                            command.Parameters.Add(parameter);
+                        }
+                    }
+
+                    connection.Open();
+                    result = (Ts)command.ExecuteScalar();
+                }
+            }
+            return result;
+        }
+
+        protected virtual async Task<Ts> ExecuteScalarAsync<Ts>(string sql, CommandType commandType, params SqlParameter[] parameters)
+        {
+            Ts result = default;
+            using (SqlConnection connection = GetSqlConnection())
+            {
+                using (SqlCommand command = new SqlCommand(sql, connection))
+                {
+                    command.CommandType = commandType;
+                    command.CommandTimeout = 600;
+                    if (parameters != null && parameters.Count() > 0)
+                    {
+                        foreach (var parameter in parameters)
+                        {
+                            command.Parameters.Add(parameter);
+                        }
+                    }
+
+                    connection.Open();
+                    object? resultRaw = await command.ExecuteScalarAsync();
+                    result = (Ts)resultRaw!;
+                }
+            }
+            return result;
+        }
+
         protected virtual int Execute(string storedProcedure, params SqlParameter[] parameters)
         {
-            return Execute(storedProcedure, CommandType.StoredProcedure, parameters);
+            return ExecuteNonQuery(storedProcedure, CommandType.StoredProcedure, parameters);
         }
         protected virtual DT ReadAs<DT>(IDataReader reader, string fieldName)
         {

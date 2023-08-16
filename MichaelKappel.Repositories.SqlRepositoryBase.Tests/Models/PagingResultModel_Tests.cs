@@ -26,10 +26,10 @@ namespace MichaelKappel.Repositories.SqlRepositoryBase.Tests.Models
                 pageItems.Add($"Test {i}");
             }
 
-            PagingResultModel<String> expected = new(paging.PageIndex, paging.PageSize, totalRecords, 43, 13, 0, 2, pageItems);
+            PagingResultsModel<String> expected = new(paging.PageIndex, paging.PageSize, totalRecords, 43, 13, 0, 2, pageItems);
 
 
-            PagingResultModel<String> actual = new(paging, totalRecords, pageItems);
+            PagingResultsModel<String> actual = new(paging, totalRecords, pageItems);
 
             Assert.AreEqual(expected.PageIndex, actual.PageIndex);
             Assert.AreEqual(expected.PageSize, actual.PageSize);
