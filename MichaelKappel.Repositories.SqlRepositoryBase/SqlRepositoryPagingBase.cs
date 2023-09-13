@@ -14,6 +14,7 @@ using MichaelKappel.Repository.Interfaces;
 using MichaelKappel.Repository.Interfaces.Models;
 using MichaelKappel.Repositories.SqlRepositoryBase.Models;
 using System.Runtime.Caching;
+using MichaelKappel.Repositories.Common.Models;
 
 namespace MichaelKappel.Repository.Bases
 {

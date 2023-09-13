@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MichaelKappel.Repositories.SqlRepositoryBase.Models
+namespace MichaelKappel.Repositories.Common.Models
 {
     public class PagingResultsModel<T> : IPagingResults<T> where T : class
     {
