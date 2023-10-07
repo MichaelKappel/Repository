@@ -20,13 +20,13 @@ namespace MichaelKappel.Repository.Bases
 
         public SqlRepositoryBase(string connectionString)
         {
-            _connectionString = connectionString;
+            this._connectionString = connectionString;
         }
 
         public SqlRepositoryBase(IConnectionStringConfiguration databaseOptions)
         {
-            _databaseOptions = databaseOptions;
-            _connectionString = string.Empty;
+            this._databaseOptions = databaseOptions;
+            this._connectionString = string.Empty;
         }
 
         protected SqlConnection GetSqlConnection()
