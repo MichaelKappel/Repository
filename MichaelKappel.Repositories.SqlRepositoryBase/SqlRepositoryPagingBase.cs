@@ -15,6 +15,8 @@ using MichaelKappel.Repository.Interfaces.Models;
 using MichaelKappel.Repositories.SqlRepositoryBase.Models;
 using System.Runtime.Caching;
 using MichaelKappel.Repositories.Common.Models;
+using Microsoft.Extensions.Options;
+using MichaelKappel.Repositories.Common.Models.Configuration;
 
 namespace MichaelKappel.Repository.Bases
 {
@@ -28,7 +30,7 @@ namespace MichaelKappel.Repository.Bases
         {
         }
 
-        protected SqlRepositoryPagingBase(IConnectionStringConfiguration databaseOptions) : base(databaseOptions)
+        protected SqlRepositoryPagingBase(IOptions<DatabaseOptionModel> databaseOptions) : base(databaseOptions)
         {
         }
 

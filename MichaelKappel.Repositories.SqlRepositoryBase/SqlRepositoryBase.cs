@@ -8,6 +8,8 @@ using System.Configuration;
 
 using System.Threading.Tasks;
 using MichaelKappel.Repository.Interfaces;
+using Microsoft.Extensions.Options;
+using MichaelKappel.Repositories.Common.Models.Configuration;
 
 namespace MichaelKappel.Repository.Bases
 {
@@ -16,16 +18,16 @@ namespace MichaelKappel.Repository.Bases
 
 
         protected readonly string _connectionString;
-        protected readonly IConnectionStringConfiguration? _databaseOptions;
+        protected readonly DatabaseOptionModel? _databaseOptions;
 
         public SqlRepositoryBase(string connectionString)
         {
             this._connectionString = connectionString;
         }
 
-        public SqlRepositoryBase(IConnectionStringConfiguration databaseOptions)
+        public SqlRepositoryBase(IOptions<DatabaseOptionModel> databaseOptions)
         {
-            this._databaseOptions = databaseOptions;
+            this._databaseOptions = databaseOptions.Value;
             this._connectionString = string.Empty;
         }
 
@@ -37,7 +39,7 @@ namespace MichaelKappel.Repository.Bases
             }
             else
             {
-                return new SqlConnection(_databaseOptions!.ConnectionString);
+                return new SqlConnection(_databaseOptions!.DefaultConnection);
             }
         }
 
