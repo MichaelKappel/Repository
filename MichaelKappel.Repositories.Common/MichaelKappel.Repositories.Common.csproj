@@ -7,9 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Enumerations\" />
-    <Folder Include="Exceptions\" />
-    <Folder Include="Extensions\" />
+    <Compile Remove="Enumerations\**" />
+    <Compile Remove="Exceptions\**" />
+    <Compile Remove="Extensions\**" />
+    <EmbeddedResource Remove="Enumerations\**" />
+    <EmbeddedResource Remove="Exceptions\**" />
+    <EmbeddedResource Remove="Extensions\**" />
+    <None Remove="Enumerations\**" />
+    <None Remove="Exceptions\**" />
+    <None Remove="Extensions\**" />
   </ItemGroup>
 
 </Project>
