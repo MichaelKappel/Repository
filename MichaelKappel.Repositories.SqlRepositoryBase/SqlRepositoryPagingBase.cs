@@ -34,7 +34,7 @@ namespace MichaelKappel.Repository.Bases
         {
         }
 
-        private (string Sql, SqlParameter[] Parameters) GetRecordCountQuery(string sql, SqlParameter[] parameters)
+        private (String Sql, SqlParameter[] Parameters) GetRecordCountQuery(String sql, SqlParameter[] parameters)
         {
 
             List<SqlParameter> countParameters = new();
@@ -43,7 +43,7 @@ namespace MichaelKappel.Repository.Bases
                 countParameters.Add(new SqlParameter(p.ParameterName, p.Value));
             }
 
-            string innerQuery = sql.Replace("  ", " ");
+            String innerQuery = sql.Replace("  ", " ");
 
             Match match = Regex.Match(innerQuery, @"(?i)\bSELECT\b(?>[^()]|\((?<Depth>)|\)(?<-Depth>))*(?(Depth)(?!))\bFROM\b", RegexOptions.Singleline | RegexOptions.IgnoreCase);
             if (match.Success)
@@ -52,25 +52,25 @@ namespace MichaelKappel.Repository.Bases
                                          .Insert(match.Index, "SELECT 1 AS FakeColumn FROM");
             }
 
-            string sqlOrderBy = "ORDER BY";
+            String sqlOrderBy = "ORDER BY";
             if (innerQuery.Contains(sqlOrderBy, StringComparison.OrdinalIgnoreCase))
             {
-                string[] sqlSplit = Regex.Split(innerQuery, sqlOrderBy, RegexOptions.IgnoreCase);
+                String[] sqlSplit = Regex.Split(innerQuery, sqlOrderBy, RegexOptions.IgnoreCase);
 
                 innerQuery = sqlSplit[0];
             }
 
-            string countSql = @$"SELECT COUNT(cteRecordCount.FakeColumn) FROM ({innerQuery}) AS cteRecordCount";
+            String countSql = @$"SELECT COUNT(cteRecordCount.FakeColumn) FROM ({innerQuery}) AS cteRecordCount";
 
             return (countSql, countParameters.ToArray());
         }
 
 
-        private int GetRecordCount(string sql, SqlParameter[] parameters, bool isCountCached = true)
+        private int GetRecordCount(String sql, SqlParameter[] parameters, bool isCountCached = true)
         {
             if (isCountCached)
             {
-                string cacheKey = GenerateCacheKey(sql, parameters);
+                String cacheKey = GenerateCacheKey(sql, parameters);
 
                 if (cache.Contains(cacheKey))
                 {
@@ -93,30 +93,30 @@ namespace MichaelKappel.Repository.Bases
             }
         }
 
-        private int ExecuteCountQuery(string sql, SqlParameter[] parameters)
+        private int ExecuteCountQuery(String sql, SqlParameter[] parameters)
         {
-            (string Sql, SqlParameter[] Parameters) countingQuery = GetRecordCountQuery(sql, parameters);
+            (String Sql, SqlParameter[] Parameters) countingQuery = GetRecordCountQuery(sql, parameters);
             return ExecuteScalar<int>(countingQuery.Sql, CommandType.Text, countingQuery.Parameters);
         }
 
-        private async Task<int> ExecuteCountQueryAsync(string sql, SqlParameter[] parameters)
+        private async Task<int> ExecuteCountQueryAsync(String sql, SqlParameter[] parameters)
         {
-            (string Sql, SqlParameter[] Parameters) countingQuery = GetRecordCountQuery(sql, parameters);
+            (String Sql, SqlParameter[] Parameters) countingQuery = GetRecordCountQuery(sql, parameters);
 
             return await ExecuteScalarAsync<int>(countingQuery.Sql, CommandType.Text, countingQuery.Parameters);
         }
 
-        private string GenerateCacheKey(string sql, SqlParameter[] parameters)
+        private String GenerateCacheKey(String sql, SqlParameter[] parameters)
         {
-            string parameterKey = string.Join("_", parameters.Select(p => p.ParameterName + "=" + p.Value));
+            String parameterKey = String.Join("_", parameters.Select(p => p.ParameterName + "=" + p.Value));
             return sql + "_" + parameterKey;
         }
 
-        private async Task<int> GetRecordCountAsync(string sql, SqlParameter[] parameters, bool isCountCached = true)
+        private async Task<int> GetRecordCountAsync(String sql, SqlParameter[] parameters, bool isCountCached = true)
         {
             if (isCountCached)
             {
-                string cacheKey = GenerateCacheKey(sql, parameters);
+                String cacheKey = GenerateCacheKey(sql, parameters);
 
                 if (cache.Contains(cacheKey))
                 {
@@ -139,7 +139,7 @@ namespace MichaelKappel.Repository.Bases
             }
         }
 
-        protected void AddPaging(IPaging pageing, ref CommandType commandType, ref string sql, ref SqlParameter[] parameters)
+        protected void AddPaging(IPaging pageing, ref CommandType commandType, ref String sql, ref SqlParameter[] parameters)
         {
             if (commandType != CommandType.Text)
             {
@@ -159,24 +159,33 @@ namespace MichaelKappel.Repository.Bases
             parameters = parametersWithPaging.ToArray();
         }
 
-        protected virtual IPagingResults<T> GetPagingResults(IPaging pageing, string sql, CommandType commandType, params SqlParameter[] parameters)
+        protected virtual PagingResultsModel<T> GetPagingResults(IPaging pageing, String sql, CommandType commandType, IList<SqlParameter> parameters)
+        {
+            return this.GetPagingResults(pageing, sql, commandType, parameters.ToArray());
+        }
+
+        protected virtual PagingResultsModel<T> GetPagingResults(IPaging pageing, String sql, CommandType commandType, params SqlParameter[] parameters)
         {
             int totalRecordCount = GetRecordCount(sql, parameters);
 
             AddPaging(pageing, ref commandType, ref sql, ref parameters);
 
-            IList<T> rawResults = GetModels(sql, commandType, parameters.ToArray());
+            IList<T> rawResults = GetModels(sql, commandType, parameters);
 
             return new PagingResultsModel<T>(pageing, totalRecordCount, rawResults);
         }
+        protected virtual async Task<PagingResultsModel<T>> GetPagingResultsAsync(IPaging pageing, String sql, CommandType commandType, IList<SqlParameter> parameters)
+        {
+            return await this.GetPagingResultsAsync(pageing, sql, commandType, parameters.ToArray());
+        }
 
-        protected virtual async Task<IPagingResults<T>> GetPagingResultsAsync(IPaging pageing, string sql, CommandType commandType, params SqlParameter[] parameters)
+        protected virtual async Task<PagingResultsModel<T>> GetPagingResultsAsync(IPaging pageing, String sql, CommandType commandType, params SqlParameter[] parameters)
         {
             Task<int> totalRecordCount = GetRecordCountAsync(sql, parameters);
 
             AddPaging(pageing, ref commandType, ref sql, ref parameters);
 
-            Task<IList<T>> rawResults = GetModelsAsync(sql, commandType, parameters.ToArray());
+            Task<IList<T>> rawResults = GetModelsAsync(sql, commandType, parameters);
 
             await Task.WhenAll(totalRecordCount, rawResults);
 

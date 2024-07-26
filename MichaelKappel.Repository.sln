@@ -19,7 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MichaelKappel.Repositories.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MichaelKappel.Repositories.EntityFrameworkRepositoryBase.Tests", "MichaelKappel.Repositories.EntityFrameworkRepositoryBase.Tests\MichaelKappel.Repositories.EntityFrameworkRepositoryBase.Tests.csproj", "{905E1350-990E-4B28-BFDF-DD7D7804B0C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleImplementation.Website", "ExampleImplementation.Website\ExampleImplementation.Website.csproj", "{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExampleImplementation.Website", "ExampleImplementation.Website\ExampleImplementation.Website.csproj", "{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MichaelKappel.Repositories.DistributedCache", "MichaelKappel.Repositories.DistributedCache\MichaelKappel.Repositories.DistributedCache.csproj", "{CA8E8624-CA4D-4AD3-B5F4-E8E45C53DF7B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,6 +61,10 @@ Global
 		{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{43DC13D2-81F6-4C9B-9E7C-3326FF7BFB93}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA8E8624-CA4D-4AD3-B5F4-E8E45C53DF7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA8E8624-CA4D-4AD3-B5F4-E8E45C53DF7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA8E8624-CA4D-4AD3-B5F4-E8E45C53DF7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA8E8624-CA4D-4AD3-B5F4-E8E45C53DF7B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
