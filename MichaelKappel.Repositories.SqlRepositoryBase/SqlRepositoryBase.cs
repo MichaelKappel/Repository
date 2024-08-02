@@ -249,6 +249,23 @@ namespace MichaelKappel.Repository.Bases
             return GetModel(sql, commandType, parameters.ToArray());
         }
 
+        protected virtual T GetModelOrNull(String sql, CommandType commandType, params SqlParameter[] parameters)
+        {
+            IList<T> results = GetModels(sql, commandType, parameters);
+            if (results != default(List<T>) && results.Any())
+            {
+                if (results.Count == 1)
+                {
+                    return (T)results[0];
+                }
+                else if (results.Count > 0)
+                {
+                    throw new Exception($" {sql} result count of {results.Count} expected 1");
+                }
+            }
+            return (T)(Object)null;
+        }
+
         protected virtual T GetModel(String sql, CommandType commandType, params SqlParameter[] parameters)
         {
             IList<T> results = GetModels(sql, commandType, parameters);
