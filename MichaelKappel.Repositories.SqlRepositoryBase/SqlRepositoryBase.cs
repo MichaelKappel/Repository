@@ -305,53 +305,60 @@ namespace MichaelKappel.Repository.Bases
 
         protected virtual IList<T> GetModels(String sql, CommandType commandType, params SqlParameter[] parameters)
         {
-            var results = default(List<T>);
-            using (SqlConnection connection = GetSqlConnection())
+            try
             {
-                using (SqlCommand command = new SqlCommand(sql, connection))
+                var results = default(List<T>);
+                using (SqlConnection connection = GetSqlConnection())
                 {
-                    command.CommandType = commandType;
-                    command.CommandTimeout = 600;
-
-                    if (parameters != null && parameters.Any())
+                    using (SqlCommand command = new SqlCommand(sql, connection))
                     {
-                        foreach (SqlParameter parameter in parameters)
-                        {
-                            command.Parameters.Add(AdjustParameterType(parameter));
-                        }
-                    }
+                        command.CommandType = commandType;
+                        command.CommandTimeout = 600;
 
-                    connection.Open();
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        //try
-                        //{
-                        if (reader.HasRows)
+                        if (parameters != null && parameters.Any())
                         {
-                            if (HasError(reader))
+                            foreach (SqlParameter parameter in parameters)
                             {
-                                return null;
-                            }
-
-                            results = new List<T>();
-                            while (reader.Read())
-                            {
-                                results.Add(CreateInfoFromReader(reader));
+                                command.Parameters.Add(AdjustParameterType(parameter));
                             }
                         }
-                        //}
-                        //catch (Exception ex)
-                        //{
-                        //    throw ex;
-                        //}
-                        //finally
-                        //{
-                        //    reader.Close();
-                        //}
+
+                        connection.Open();
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            //try
+                            //{
+                            if (reader.HasRows)
+                            {
+                                if (HasError(reader))
+                                {
+                                    return null;
+                                }
+
+                                results = new List<T>();
+                                while (reader.Read())
+                                {
+                                    results.Add(CreateInfoFromReader(reader));
+                                }
+                            }
+                            //}
+                            //catch (Exception ex)
+                            //{
+                            //    throw ex;
+                            //}
+                            //finally
+                            //{
+                            //    reader.Close();
+                            //}
+                        }
                     }
                 }
+                return results ?? new List<T>();
             }
-            return results ?? new List<T>();
+            catch
+            {
+                throw new Exception(GetFullSql(sql, parameters));
+            }
         }
         protected virtual int ExecuteNonQuery(String sql, CommandType commandType, params SqlParameter[] parameters)
         {
