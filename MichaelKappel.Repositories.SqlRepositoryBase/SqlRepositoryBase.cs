@@ -15,8 +15,6 @@ namespace MichaelKappel.Repository.Bases
 {
     public abstract class SqlRepositoryBase<T>
     {
-
-
         protected readonly string _connectionString;
         protected readonly DatabaseOptionModel? _databaseOptions;
 
@@ -42,9 +40,9 @@ namespace MichaelKappel.Repository.Bases
                 return new SqlConnection(_databaseOptions!.DefaultConnection);
             }
         }
+
         private SqlParameter AdjustParameterType(SqlParameter originalParameter)
         {
-            // Create a copy of the original parameter with all relevant properties
             SqlParameter adjustedParameter = new SqlParameter
             {
                 ParameterName = originalParameter.ParameterName,
@@ -53,11 +51,10 @@ namespace MichaelKappel.Repository.Bases
             };
 
 
-            // Adjust the value if it is of type DateOnly
             if (originalParameter.Value is DateOnly dateOnlyValue)
             {
                 adjustedParameter.Value = new DateTime(dateOnlyValue.Year, dateOnlyValue.Month, dateOnlyValue.Day);
-                adjustedParameter.SqlDbType = SqlDbType.DateTime;  // Ensure the SqlDbType matches the expected type
+                adjustedParameter.SqlDbType = SqlDbType.DateTime;  
             }
             else
             {
@@ -186,6 +183,7 @@ namespace MichaelKappel.Repository.Bases
         protected virtual async Task<IList<T>> GetModelsAsync(String storedProcedure, CommandType commandType, params SqlParameter[] parameters)
         {
             var results = default(List<T>);
+            // Connection and command creation per thread.
             using (SqlConnection connection = GetSqlConnection())
             {
                 using (SqlCommand command = new SqlCommand(storedProcedure, connection))
@@ -201,7 +199,7 @@ namespace MichaelKappel.Repository.Bases
                         }
                     }
 
-                    connection.Open();
+                    await connection.OpenAsync();
                     using (SqlDataReader reader = await command.ExecuteReaderAsync())
                     {
                         try
@@ -214,7 +212,7 @@ namespace MichaelKappel.Repository.Bases
                                 }
 
                                 results = new List<T>();
-                                while (reader.Read())
+                                while (await reader.ReadAsync())
                                 {
                                     results.Add(CreateInfoFromReader(reader));
                                 }
@@ -222,17 +220,18 @@ namespace MichaelKappel.Repository.Bases
                         }
                         catch (Exception ex)
                         {
-                            throw ex;
+                            throw new Exception("Error reading data", ex);
                         }
                         finally
                         {
-                            reader.Close();
+                            await reader.CloseAsync();
                         }
                     }
                 }
             }
             return (results ?? new List<T>()).AsReadOnly();
         }
+
 
         protected virtual T GetModel(String storedProcedure, IList<SqlParameter> parameters)
         {
@@ -294,7 +293,7 @@ namespace MichaelKappel.Repository.Bases
             return GetModels(storedProcedure, parameters.ToArray());
         }
 
-        protected virtual IList<T> GetModels(String storedProcedure, params SqlParameter[] parameters)
+        protected virtual IList<T> GetModels(String storedProcedure, SqlParameter[] parameters)
         {
             return GetModels(storedProcedure, CommandType.StoredProcedure, parameters);
         }
@@ -303,7 +302,7 @@ namespace MichaelKappel.Repository.Bases
             return GetModels(sql, commandType, parameters.ToArray());
         }
 
-        protected virtual IList<T> GetModels(String sql, CommandType commandType, params SqlParameter[] parameters)
+        protected virtual IList<T> GetModels(String sql, CommandType commandType, SqlParameter[] parameters, Int32 retries = 0)
         {
             try
             {
@@ -357,10 +356,17 @@ namespace MichaelKappel.Repository.Bases
             }
             catch
             {
-                throw new Exception(GetFullSql(sql, parameters));
+                if(retries < 2)
+                {
+                    return this.GetModels(sql, commandType, parameters, retries += 1);
+                }
+                else
+                {
+                    throw new Exception(GetFullSql(sql, parameters));
+                }
             }
         }
-        protected virtual int ExecuteNonQuery(String sql, CommandType commandType, params SqlParameter[] parameters)
+        protected virtual int ExecuteNonQuery(String sql, CommandType commandType,  SqlParameter[] parameters, Int32 retries = 0)
         {
             try
             {
@@ -389,21 +395,27 @@ namespace MichaelKappel.Repository.Bases
             }
             catch
             {
+                if (retries < 2)
+                {
+                    return this.ExecuteNonQuery(sql, commandType, parameters, retries += 1);
+                }
+                else
+                {
 #if DEBUG
-                throw new Exception(this.GetFullSql(sql, parameters));
+                    throw new Exception(this.GetFullSql(sql, parameters));
 #else
                             throw;
 #endif
+                }
             }
 
         }
 
-        protected virtual async Task<int> ExecuteNonQueryAsync(String sql, CommandType commandType, params SqlParameter[] parameters)
+        protected virtual async Task<int> ExecuteNonQueryAsync(String sql, CommandType commandType, SqlParameter[] parameters, Int32 retries = 0)
         {
             try
             {
-
-                int result = default;
+                int result;
                 using (SqlConnection connection = GetSqlConnection())
                 {
                     using (SqlCommand command = new SqlCommand(sql, connection))
@@ -419,23 +431,32 @@ namespace MichaelKappel.Repository.Bases
                             }
                         }
 
-                        connection.Open();
+                        await connection.OpenAsync();
                         result = await command.ExecuteNonQueryAsync();
                     }
                 }
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                {
+                    if (retries < 2)
+                    {
+                        return await this.ExecuteNonQueryAsync(sql, commandType, parameters, retries += 1);
+                    }
+                    else
+                    {
 #if DEBUG
-                throw new Exception(this.GetFullSql(sql, parameters));
+                        throw new Exception(this.GetFullSql(sql, parameters), ex);
 #else
-                            throw;
+            throw;
 #endif
+                    }
+                }
             }
         }
 
-        protected virtual Ts ExecuteScalar<Ts>(String sql, CommandType commandType, params SqlParameter[] parameters)
+        protected virtual Ts ExecuteScalar<Ts>(String sql, CommandType commandType, SqlParameter[] parameters, Int32 retries = 0)
         {
             try
             {
@@ -462,27 +483,36 @@ namespace MichaelKappel.Repository.Bases
                 }
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                {
+                    if (retries < 2)
+                    {
+                        return ExecuteScalar<Ts>(sql, commandType, parameters, retries += 1);
+                    }
+                    else
+                    {
 #if DEBUG
-                throw new Exception(this.GetFullSql(sql, parameters));
+                        throw new Exception(this.GetFullSql(sql, parameters), ex);
 #else
-                  throw;
+            throw;
 #endif
+                    }
+                }
             }
         }
-
-        protected virtual async Task<Ts> ExecuteScalarAsync<Ts>(String sql, CommandType commandType, params SqlParameter[] parameters)
+        protected virtual async Task<Ts> ExecuteScalarAsync<Ts>(String sql, CommandType commandType, SqlParameter[] parameters)
         {
             try
             {
-                Ts result = default;
+                Ts result;
                 using (SqlConnection connection = GetSqlConnection())
                 {
                     using (SqlCommand command = new SqlCommand(sql, connection))
                     {
                         command.CommandType = commandType;
                         command.CommandTimeout = 600;
+
                         if (parameters != null && parameters.Any())
                         {
                             foreach (SqlParameter parameter in parameters)
@@ -490,19 +520,20 @@ namespace MichaelKappel.Repository.Bases
                                 command.Parameters.Add(AdjustParameterType(parameter));
                             }
                         }
-                        connection.Open();
-                        object? resultRaw = await command.ExecuteScalarAsync();
+
+                        await connection.OpenAsync();
+                        object resultRaw = await command.ExecuteScalarAsync();
                         result = (Ts)resultRaw!;
                     }
                 }
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
 #if DEBUG
-                throw new Exception(this.GetFullSql(sql, parameters));
+                throw new Exception(this.GetFullSql(sql, parameters), ex);
 #else
-                            throw;
+            throw;
 #endif
             }
         }
@@ -514,6 +545,10 @@ namespace MichaelKappel.Repository.Bases
         protected virtual DT ReadAs<DT>(IDataReader reader, String fieldName)
         {
             Type expectedType = typeof(DT);
+            if(reader.GetOrdinal(fieldName) < 0)
+            {
+                throw new Exception($"FiiedName {fieldName} Not found");
+            }
             var rawFieldValue = reader[fieldName];
             try
             {
