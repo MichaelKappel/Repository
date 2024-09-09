@@ -50,14 +50,22 @@ namespace MichaelKappel.Repository.Bases
                 Size = originalParameter.Size
             };
 
-
+            // Handle DateOnly -> DateTime conversion
             if (originalParameter.Value is DateOnly dateOnlyValue)
             {
                 adjustedParameter.Value = new DateTime(dateOnlyValue.Year, dateOnlyValue.Month, dateOnlyValue.Day);
-                adjustedParameter.SqlDbType = SqlDbType.DateTime;  
+                adjustedParameter.SqlDbType = SqlDbType.DateTime;
+            }
+            // Handle table-valued parameter (TVP)
+            else if (originalParameter.SqlDbType == SqlDbType.Structured)
+            {
+                adjustedParameter.SqlDbType = SqlDbType.Structured;
+                adjustedParameter.TypeName = originalParameter.TypeName; // Preserve the type name for TVPs
+                adjustedParameter.Value = originalParameter.Value;       // Ensure the DataTable is correctly passed
             }
             else
             {
+                // For other data types, just copy the value and the data type
                 adjustedParameter.Value = originalParameter.Value;
                 adjustedParameter.SqlDbType = originalParameter.SqlDbType;
             }
@@ -65,16 +73,17 @@ namespace MichaelKappel.Repository.Bases
             return adjustedParameter;
         }
 
+
         private String FormatSqlParameter(SqlParameter param)
         {
-            // Handle formatting based on data type
             switch (param.SqlDbType)
             {
                 case SqlDbType.DateTime:
                 case SqlDbType.Date:
                 case SqlDbType.Time:
                 case SqlDbType.DateTime2:
-                    return $"'{param.Value:yyyy-MM-dd HH:mm:ss}'";  // Standard SQL datetime formatting
+                    return $"'{((DateTime)param.Value):yyyy-MM-dd HH:mm:ss}'";  // Standard SQL datetime formatting
+
                 case SqlDbType.Char:
                 case SqlDbType.VarChar:
                 case SqlDbType.NChar:
@@ -82,9 +91,25 @@ namespace MichaelKappel.Repository.Bases
                 case SqlDbType.Text:
                 case SqlDbType.NText:
                     return $"'{param.Value?.ToString()?.Replace("'", "''") ?? ""}'";  // Handle single quotes in strings
+
                 default:
                     return param.Value.ToString();
             }
+        }
+
+        private String FormatSqlValue(Object value)
+        {
+            if (value == null || value == DBNull.Value)
+            {
+                return "NULL";
+            }
+
+            if (value is String stringValue)
+            {
+                return $"'{stringValue.Replace("'", "''")}'";
+            }
+
+            return value.ToString();
         }
 
         private String GetSqlType(SqlParameter param)
@@ -96,8 +121,15 @@ namespace MichaelKappel.Repository.Bases
                 return $"{param.SqlDbType}({size})";
             }
 
+            // Special case for Table-Valued Parameters
+            if (param.SqlDbType == SqlDbType.Structured)
+            {
+                return param.TypeName;  // Return the defined type name for TVP
+            }
+
             return param.SqlDbType.ToString();
         }
+
 
         protected String GetFullSql(String sql, IList<SqlParameter> parameters)
         {
@@ -107,7 +139,6 @@ namespace MichaelKappel.Repository.Bases
         protected String GetFullSql(String sql, params SqlParameter[] parameters)
         {
             List<SqlParameter> commandParameters = new();
-
             StringBuilder result = new("\r\n\r\n");
 
             if (parameters != null && parameters.Any())
@@ -119,14 +150,36 @@ namespace MichaelKappel.Repository.Bases
 
                 foreach (var commandParameter in commandParameters)
                 {
-                    String value = commandParameter.Value != null ? FormatSqlParameter(commandParameter) : "NULL";
+                    if (commandParameter.SqlDbType == SqlDbType.Structured)
+                    {
+                        // Handle TVP separately by including the TypeName
+                        result.AppendLine($"-- Table-valued parameter: {commandParameter.ParameterName}");
+                        result.AppendLine($"DECLARE @{commandParameter.ParameterName.Replace("@", "")} AS {commandParameter.TypeName};");
 
-                    String parameterNamePart = commandParameter
-                        .ParameterName
-                        .Replace("@", "")
-                        .Replace(" ", String.Empty);
+                        // Generate INSERT INTO for TVP data
+                        if (commandParameter.Value is DataTable dataTable)
+                        {
+                            result.AppendLine($"INSERT INTO @{commandParameter.ParameterName.Replace("@", "")} (WordId, WebsitePageId, InstanceCount) VALUES");
 
-                    result.Append($"DECLARE @{parameterNamePart} AS {this.GetSqlType(commandParameter)} = {value}; \r\n");
+                            foreach (DataRow row in dataTable.Rows)
+                            {
+                                var values = String.Join(", ", row.ItemArray.Select(val => FormatSqlValue(val)));
+                                result.AppendLine($"({values}),");
+                            }
+
+                            // Remove last comma and append semicolon
+                            if (result.Length > 0)
+                                result.Remove(result.Length - 3, 1).AppendLine(";");
+                        }
+                    }
+                    else
+                    {
+                        // For regular parameters, handle scalar types
+                        String value = commandParameter.Value != null ? FormatSqlParameter(commandParameter) : "NULL";
+                        String parameterNamePart = commandParameter.ParameterName.Replace("@", "").Replace(" ", String.Empty);
+
+                        result.Append($"DECLARE @{parameterNamePart} AS {this.GetSqlType(commandParameter)} = {value}; \r\n");
+                    }
                 }
             }
 
@@ -134,6 +187,7 @@ namespace MichaelKappel.Repository.Bases
 
             return result.ToString();
         }
+
 
         protected virtual T GetFirstModel(String storedProcedure, params SqlParameter[] parameters)
         {
@@ -354,15 +408,15 @@ namespace MichaelKappel.Repository.Bases
                 }
                 return results ?? new List<T>();
             }
-            catch
+            catch (Exception ex)
             {
-                if(retries < 2)
+                if(retries < 4)
                 {
                     return this.GetModels(sql, commandType, parameters, retries += 1);
                 }
                 else
                 {
-                    throw new Exception(GetFullSql(sql, parameters));
+                    throw new Exception(GetFullSql(sql, parameters), ex);
                 }
             }
         }
@@ -395,7 +449,7 @@ namespace MichaelKappel.Repository.Bases
             }
             catch
             {
-                if (retries < 2)
+                if (retries < 4)
                 {
                     return this.ExecuteNonQuery(sql, commandType, parameters, retries += 1);
                 }
@@ -440,7 +494,7 @@ namespace MichaelKappel.Repository.Bases
             catch (Exception ex)
             {
                 {
-                    if (retries < 2)
+                    if (retries < 4)
                     {
                         return await this.ExecuteNonQueryAsync(sql, commandType, parameters, retries += 1);
                     }
@@ -486,7 +540,7 @@ namespace MichaelKappel.Repository.Bases
             catch (Exception ex)
             {
                 {
-                    if (retries < 2)
+                    if (retries < 4)
                     {
                         return ExecuteScalar<Ts>(sql, commandType, parameters, retries += 1);
                     }
