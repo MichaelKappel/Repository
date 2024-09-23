@@ -17,17 +17,18 @@ namespace MichaelKappel.Repositories.Common.Models
             this.PageRecordCount = results.Count();
             this.PageIndex = paging.PageIndex;
             this.PageSize = paging.PageSize;
-
-            this.PageCount = (Int32)Math.Ceiling((Decimal)this.TotalRecordCount / (Decimal)this.PageSize);
-            if (this.PageIndex > 0)
+            if (totalRecordCount > 0)
             {
-                this.PreviousPageIndex = paging.PageIndex - 1;
+                this.PageCount = (Int32)Math.Ceiling((Decimal)this.TotalRecordCount / (Decimal)this.PageSize);
+                if (this.PageIndex > 0)
+                {
+                    this.PreviousPageIndex = paging.PageIndex - 1;
+                }
+                if (this.PageIndex < (this.PageCount - 1))
+                {
+                    this.NextPageIndex = paging.PageIndex + 1;
+                }
             }
-            if (this.PageIndex < (this.PageCount - 1))
-            {
-                this.NextPageIndex = paging.PageIndex + 1;
-            }
-
             this.Results = results;
         }
 
