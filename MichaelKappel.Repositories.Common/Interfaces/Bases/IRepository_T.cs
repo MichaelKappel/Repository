@@ -10,4 +10,9 @@ namespace MichaelKappel.Repository.Interfaces.Bases
 
     }
 
+    public interface IRepository<T, TKey,TUnsaved> : IRepositoryCreate<T, TUnsaved>, IRepositoryMerge<T, TUnsaved>, IRepositoryRead<T, TKey>, IRepositoryUpdate<T>, IRepositoryDelete<T, TKey>, IRepositoryList<T>
+    {
+
+    }
+
 }
