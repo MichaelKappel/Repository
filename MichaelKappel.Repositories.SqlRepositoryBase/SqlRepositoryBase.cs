@@ -146,12 +146,12 @@ namespace MichaelKappel.Repository.Bases
         }
 
 
-        protected String GetFullSql(String sql, IList<SqlParameter> parameters)
+        protected String GetFullSql(String sql, CommandType commandType, IList<SqlParameter> parameters)
         {
-            return this.GetFullSql(sql, parameters.ToArray());
+            return this.GetFullSql(sql, commandType, parameters.ToArray());
         }
 
-        protected String GetFullSql(String sql, params SqlParameter[] parameters)
+        protected String GetFullSql(String sql, CommandType commandType, params SqlParameter[] parameters)
         {
             List<SqlParameter> commandParameters = new();
             StringBuilder result = new("\r\n\r\n");
@@ -201,7 +201,39 @@ namespace MichaelKappel.Repository.Bases
                 }
             }
 
-            result.Append(sql);
+            // Handle stored procedure formatting when explicitly indicated
+            String trimmedSql = sql?.Trim() ?? String.Empty;
+            Boolean startsWithExec = trimmedSql.StartsWith("EXEC", StringComparison.OrdinalIgnoreCase);
+
+            if (startsWithExec)
+            {
+                // Remove existing EXEC keyword for consistent output
+                trimmedSql = trimmedSql.Substring(4).Trim();
+            }
+
+            if (commandType == CommandType.StoredProcedure)
+            {
+                List<string> execParams = new();
+
+                foreach (var commandParameter in commandParameters)
+                {
+                    string parameterNamePart = commandParameter.ParameterName.Replace("@", "").Replace(" ", string.Empty);
+                    execParams.Add($"{commandParameter.ParameterName} = @{parameterNamePart}");
+                }
+
+                result.Append("EXEC ");
+                result.Append(trimmedSql);
+
+                if (execParams.Any())
+                {
+                    result.Append(" ");
+                    result.Append(String.Join(", ", execParams));
+                }
+            }
+            else
+            {
+                result.Append(sql);
+            }
 
             return result.ToString();
         }
@@ -354,7 +386,7 @@ namespace MichaelKappel.Repository.Bases
             string className = this.GetType().Name;  // Gets the name of the current instance type
 
 #if DEBUG
-            throw new Exception($"{className} No result found for {this.GetFullSql(sql, parameters)}");
+            throw new Exception($"{className} No result found for {this.GetFullSql(sql, commandType, parameters)}");
 #else
             throw new Exception($"No result found on GetModel");
 #endif
@@ -434,7 +466,7 @@ namespace MichaelKappel.Repository.Bases
                 }
                 else
                 {
-                    throw new Exception(GetFullSql(sql, parameters), ex);
+                    throw new Exception(GetFullSql(sql, commandType, parameters), ex);
                 }
             }
         }
@@ -474,7 +506,7 @@ namespace MichaelKappel.Repository.Bases
                 else
                 {
 #if DEBUG
-                    throw new Exception(this.GetFullSql(sql, parameters));
+                    throw new Exception(this.GetFullSql(sql, commandType, parameters));
 #else
                             throw;
 #endif
@@ -519,7 +551,7 @@ namespace MichaelKappel.Repository.Bases
                     else
                     {
 #if DEBUG
-                        throw new Exception(this.GetFullSql(sql, parameters), ex);
+                        throw new Exception(this.GetFullSql(sql, commandType, parameters), ex);
 #else
             throw;
 #endif
@@ -565,7 +597,7 @@ namespace MichaelKappel.Repository.Bases
                     else
                     {
 #if DEBUG
-                        throw new Exception(this.GetFullSql(sql, parameters), ex);
+                        throw new Exception(this.GetFullSql(sql, commandType, parameters), ex);
 #else
             throw;
 #endif
@@ -603,7 +635,7 @@ namespace MichaelKappel.Repository.Bases
             catch (Exception ex)
             {
 #if DEBUG
-                throw new Exception(this.GetFullSql(sql, parameters), ex);
+                throw new Exception(this.GetFullSql(sql, commandType, parameters), ex);
 #else
             throw;
 #endif
