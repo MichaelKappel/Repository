@@ -133,6 +133,11 @@ namespace MichaelKappel.Repository.Bases
             if (param.SqlDbType == SqlDbType.NVarChar || param.SqlDbType == SqlDbType.VarChar || param.SqlDbType == SqlDbType.NChar || param.SqlDbType == SqlDbType.Char)
             {
                 Int32 size = param.Size > 0 ? param.Size : param.Value?.ToString()?.Length ?? 0;
+                // Avoid invalid zero length declarations
+                if (size == 0)
+                {
+                    size = 1;
+                }
                 return $"{param.SqlDbType}({size})";
             }
 
@@ -196,7 +201,7 @@ namespace MichaelKappel.Repository.Bases
                         String value = commandParameter.Value != null ? FormatSqlParameter(commandParameter) : "NULL";
                         String parameterNamePart = commandParameter.ParameterName.Replace("@", "").Replace(" ", String.Empty);
 
-                        result.Append($"DECLARE @{parameterNamePart} AS {this.GetSqlType(commandParameter)} = {value}; \r\n");
+                        result.Append($"DECLARE @{parameterNamePart} AS {this.GetSqlType(commandParameter)} = {value};\r\n");
                     }
                 }
             }
