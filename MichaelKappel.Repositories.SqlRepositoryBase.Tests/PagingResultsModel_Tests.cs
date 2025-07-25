@@ -333,4 +333,5 @@ namespace MichaelKappel.Repositories.SqlRepositoryBase.Tests
             VerifyModel(4, 20, 100);
         }
 
-    }\n}
+}
+}
