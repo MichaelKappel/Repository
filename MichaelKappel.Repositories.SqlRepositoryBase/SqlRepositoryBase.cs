@@ -109,6 +109,16 @@ namespace MichaelKappel.Repository.Bases
                 return "NULL";
             }
 
+            if (value is DateTime dt)
+            {
+                return $"'{dt:yyyy-MM-dd HH:mm:ss}'";
+            }
+
+            if (value is DateOnly dateOnly)
+            {
+                return $"'{dateOnly:yyyy-MM-dd}'";
+            }
+
             if (value is String stringValue)
             {
                 return $"'{stringValue.Replace("'", "''")}'";
@@ -157,24 +167,27 @@ namespace MichaelKappel.Repository.Bases
                 {
                     if (commandParameter.SqlDbType == SqlDbType.Structured)
                     {
-                        // Handle TVP separately by including the TypeName
+                        // Handle table-valued parameters
+                        var paramName = commandParameter.ParameterName.Replace("@", "").Replace(" ", String.Empty);
                         result.AppendLine($"-- Table-valued parameter: {commandParameter.ParameterName}");
-                        result.AppendLine($"DECLARE @{commandParameter.ParameterName.Replace("@", "")} AS {commandParameter.TypeName};");
+                        result.AppendLine($"DECLARE @{paramName} AS {commandParameter.TypeName};");
 
-                        // Generate INSERT INTO for TVP data
-                        if (commandParameter.Value is DataTable dataTable)
+                        if (commandParameter.Value is DataTable dataTable && dataTable.Columns.Count > 0)
                         {
-                            result.AppendLine($"INSERT INTO @{commandParameter.ParameterName.Replace("@", "")} (WordId, WebsitePageId, InstanceCount) VALUES");
+                            var columnNames = String.Join(", ", dataTable.Columns.Cast<DataColumn>().Select(c => $"[{c.ColumnName}]").ToArray());
+                            result.AppendLine($"INSERT INTO @{paramName} ({columnNames}) VALUES");
 
+                            List<string> valueLines = new();
                             foreach (DataRow row in dataTable.Rows)
                             {
-                                var values = String.Join(", ", row.ItemArray.Select(val => FormatSqlValue(val)));
-                                result.AppendLine($"({values}),");
+                                var values = row.ItemArray.Select(val => FormatSqlValue(val));
+                                valueLines.Add($"({String.Join(", ", values)})");
                             }
 
-                            // Remove last comma and append semicolon
-                            if (result.Length > 0)
-                                result.Remove(result.Length - 3, 1).AppendLine(";");
+                            if (valueLines.Any())
+                            {
+                                result.AppendLine(String.Join(",\n", valueLines) + ";");
+                            }
                         }
                     }
                     else
