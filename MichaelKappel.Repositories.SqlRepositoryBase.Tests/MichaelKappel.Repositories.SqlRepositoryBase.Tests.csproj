@@ -22,4 +22,6 @@
     <ProjectReference Include="..\MichaelKappel.Repositories.SqlRepositoryBase\MichaelKappel.Repositories.SqlRepositoryBase.csproj" />
   </ItemGroup>
 
+
+
 </Project>
