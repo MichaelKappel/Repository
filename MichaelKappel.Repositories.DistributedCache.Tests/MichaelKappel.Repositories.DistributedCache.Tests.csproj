@@ -4,7 +4,6 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -13,13 +12,12 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
     <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
-    <PackageReference Include="coverlet.collector" Version="3.2.0" />
     <PackageReference Include="Moq" Version="4.18.4" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MichaelKappel.Repositories.Common\MichaelKappel.Repositories.Common.csproj" />
-    <ProjectReference Include="..\MichaelKappel.Repositories.SqlRepositoryBase\MichaelKappel.Repositories.SqlRepositoryBase.csproj" />
+    <ProjectReference Include="..\MichaelKappel.Repositories.DistributedCache\MichaelKappel.Repositories.DistributedCache.csproj" />
   </ItemGroup>
 
 </Project>

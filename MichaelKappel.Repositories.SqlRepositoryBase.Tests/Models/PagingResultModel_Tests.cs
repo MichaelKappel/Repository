@@ -1,3 +1,4 @@
+using MichaelKappel.Repositories.Common.Models;
 ﻿using MichaelKappel.Repositories.SqlRepositoryBase.Models;
 using MichaelKappel.Repository.Interfaces.Models;
 
@@ -26,7 +27,8 @@ namespace MichaelKappel.Repositories.SqlRepositoryBase.Tests.Models
                 pageItems.Add($"Test {i}");
             }
 
-            PagingResultsModel<String> expected = new(paging.PageIndex, paging.PageSize, totalRecords, 43, 13, 0, 2, pageItems);
+            Int32 expectedPageCount = (Int32)Math.Ceiling((Decimal)totalRecords / paging.PageSize);
+            PagingResultsModel<String> expected = new(totalRecords, paging.PageSize, expectedPageCount, 0, 2, paging.PageIndex, paging.PageSize, pageItems);
 
 
             PagingResultsModel<String> actual = new(paging, totalRecords, pageItems);
