@@ -223,7 +223,7 @@ namespace MichaelKappel.Repository.Bases
                 foreach (var commandParameter in commandParameters)
                 {
                     string parameterNamePart = commandParameter.ParameterName.Replace("@", "").Replace(" ", string.Empty);
-                    execParams.Add($"{commandParameter.ParameterName} = @{parameterNamePart}");
+                    execParams.Add($"@{parameterNamePart} = @{parameterNamePart}");
                 }
 
                 result.Append("EXEC ");
