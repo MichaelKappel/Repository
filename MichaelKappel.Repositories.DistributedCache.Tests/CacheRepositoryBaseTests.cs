@@ -1,140 +1,166 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-using MichaelKappel.Repositories.DistributedCache;
 using MichaelKappel.Repositories.Common.Models;
+using MichaelKappel.Repositories.DistributedCache;
 using MichaelKappel.Repositories.SqlRepositoryBase.Models;
+using Moq;
 
 namespace MichaelKappel.Repositories.DistributedCache.Tests;
 
 [TestClass]
 public class CacheRepositoryBaseTests
 {
-    private CacheRepositoryBase CreateRepo(Mock<IDistributedCache> mockCache)
+    private sealed class CacheItem
     {
-        return new CacheRepositoryBase(mockCache.Object);
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private static CacheRepositoryBase CreateRepository(Mock<IDistributedCache> distributedCache)
+    {
+        return new CacheRepositoryBase(distributedCache.Object);
     }
 
     [TestMethod]
-    public async Task ReadCacheAsync_CacheMiss_StoresAndReturns()
+    public void ReadCache_CacheHit_ReturnsCachedValue_WithoutCallingFallback()
     {
-        var cacheKey = "key";
-        var expected = "value";
-        var mockCache = new Mock<IDistributedCache>();
-        mockCache.Setup(c => c.GetAsync(cacheKey, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync((byte[]?)null);
-        byte[]? stored = null;
-        mockCache.Setup(c => c.SetAsync(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
-                 .Callback<string, byte[], DistributedCacheEntryOptions, CancellationToken>((k, b, o, t) => stored = b)
-                 .Returns(Task.CompletedTask);
+        var cacheKey = "cache-hit";
+        var expected = new CacheItem { Name = "cached" };
+        var payload = JsonSerializer.SerializeToUtf8Bytes(expected);
+        var distributedCache = new Mock<IDistributedCache>();
+        distributedCache.Setup(cache => cache.Get(cacheKey)).Returns(payload);
 
-        var repo = CreateRepo(mockCache);
-        var result = await repo.ReadCacheAsync(cacheKey, () => Task.FromResult(expected));
+        var repository = CreateRepository(distributedCache);
+        var fallbackCalled = false;
 
-        Assert.AreEqual(expected, result);
-        Assert.IsNotNull(stored);
+        var result = repository.ReadCache(cacheKey, () =>
+        {
+            fallbackCalled = true;
+            return new CacheItem { Name = "fallback" };
+        });
+
+        Assert.AreEqual("cached", result.Name);
+        Assert.IsFalse(fallbackCalled);
+        distributedCache.Verify(cache => cache.Set(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>()), Times.Never);
     }
 
     [TestMethod]
-    public void ReadCache_CacheMiss_StoresAndReturns()
+    public async Task ReadCacheAsync_CacheHit_ReturnsCachedValue_WithoutCallingFallback()
     {
-        var cacheKey = "key";
-        var expected = "value";
-        var mockCache = new Mock<IDistributedCache>();
-        mockCache.Setup(c => c.Get(cacheKey)).Returns((byte[]?)null);
-        byte[]? stored = null;
-        mockCache.Setup(c => c.Set(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>()))
-                 .Callback<string, byte[], DistributedCacheEntryOptions>((k, b, o) => stored = b);
+        var cacheKey = "cache-hit-async";
+        var expected = new CacheItem { Name = "cached" };
+        var payload = JsonSerializer.SerializeToUtf8Bytes(expected);
+        var distributedCache = new Mock<IDistributedCache>();
+        distributedCache.Setup(cache => cache.GetAsync(cacheKey, It.IsAny<CancellationToken>())).ReturnsAsync(payload);
 
-        var repo = CreateRepo(mockCache);
-        var result = repo.ReadCache(cacheKey, () => expected);
+        var repository = CreateRepository(distributedCache);
+        var fallbackCalled = false;
 
-        Assert.AreEqual(expected, result);
-        Assert.IsNotNull(stored);
+        var result = await repository.ReadCacheAsync(cacheKey, () =>
+        {
+            fallbackCalled = true;
+            return Task.FromResult(new CacheItem { Name = "fallback" });
+        });
+
+        Assert.AreEqual("cached", result.Name);
+        Assert.IsFalse(fallbackCalled);
+        distributedCache.Verify(cache => cache.SetAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [TestMethod]
-    public async Task ListCacheAsync_CacheMiss_StoresAndReturns()
+    public void ReadCache_CacheMiss_StoresUsingDefaultSlidingExpiration()
     {
-        var cacheKey = "list";
-        var expected = new List<string> { "a", "b" } as IList<string>;
-        var mockCache = new Mock<IDistributedCache>();
-        mockCache.Setup(c => c.GetAsync(cacheKey, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync((byte[]?)null);
-        byte[]? stored = null;
-        mockCache.Setup(c => c.SetAsync(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
-                 .Callback<string, byte[], DistributedCacheEntryOptions, CancellationToken>((k, b, o, t) => stored = b)
-                 .Returns(Task.CompletedTask);
+        var cacheKey = "cache-miss";
+        var distributedCache = new Mock<IDistributedCache>();
+        distributedCache.Setup(cache => cache.Get(cacheKey)).Returns((byte[]?)null);
 
-        var repo = CreateRepo(mockCache);
-        var result = await repo.ListCacheAsync(cacheKey, () => Task.FromResult(expected));
+        DistributedCacheEntryOptions? capturedOptions = null;
+        distributedCache
+            .Setup(cache => cache.Set(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>()))
+            .Callback<string, byte[], DistributedCacheEntryOptions>((_, _, options) => capturedOptions = options);
 
-        CollectionAssert.AreEqual((List<string>)expected, (List<string>)result);
-        Assert.IsNotNull(stored);
+        var repository = CreateRepository(distributedCache);
+
+        var result = repository.ReadCache(cacheKey, () => new CacheItem { Name = "generated" });
+
+        Assert.AreEqual("generated", result.Name);
+        Assert.IsNotNull(capturedOptions);
+        Assert.AreEqual(TimeSpan.FromHours(24), capturedOptions!.SlidingExpiration);
     }
 
     [TestMethod]
-    public void ListCache_CacheMiss_StoresAndReturns()
+    public async Task ReadCacheAsync_CacheMiss_StoresUsingDefaultSlidingExpiration()
     {
-        var cacheKey = "list";
-        var expected = new List<string> { "a", "b" } as IList<string>;
-        var mockCache = new Mock<IDistributedCache>();
-        mockCache.Setup(c => c.Get(cacheKey)).Returns((byte[]?)null);
-        byte[]? stored = null;
-        mockCache.Setup(c => c.Set(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>()))
-                 .Callback<string, byte[], DistributedCacheEntryOptions>((k, b, o) => stored = b);
+        var cacheKey = "cache-miss-async";
+        var distributedCache = new Mock<IDistributedCache>();
+        distributedCache.Setup(cache => cache.GetAsync(cacheKey, It.IsAny<CancellationToken>())).ReturnsAsync((byte[]?)null);
 
-        var repo = CreateRepo(mockCache);
-        var result = repo.ListCache(cacheKey, () => expected);
+        DistributedCacheEntryOptions? capturedOptions = null;
+        distributedCache
+            .Setup(cache => cache.SetAsync(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
+            .Callback<string, byte[], DistributedCacheEntryOptions, CancellationToken>((_, _, options, _) => capturedOptions = options)
+            .Returns(Task.CompletedTask);
 
-        CollectionAssert.AreEqual((List<string>)expected, (List<string>)result);
-        Assert.IsNotNull(stored);
+        var repository = CreateRepository(distributedCache);
+
+        var result = await repository.ReadCacheAsync(cacheKey, () => Task.FromResult(new CacheItem { Name = "generated" }));
+
+        Assert.AreEqual("generated", result.Name);
+        Assert.IsNotNull(capturedOptions);
+        Assert.AreEqual(TimeSpan.FromDays(30), capturedOptions!.SlidingExpiration);
     }
 
     [TestMethod]
-    public async Task PagingCacheAsync_CacheMiss_StoresAndReturns()
+    public void ListCache_CacheHit_ReturnsCachedList()
     {
-        var cacheKey = "paging";
-        var paging = new PagingModel(0, 10);
-        var expected = new PagingResultsModel<string>(paging, 2, new List<string> { "x", "y" });
-        var mockCache = new Mock<IDistributedCache>();
-        mockCache.Setup(c => c.GetAsync(cacheKey, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync((byte[]?)null);
-        byte[]? stored = null;
-        mockCache.Setup(c => c.SetAsync(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
-                 .Callback<string, byte[], DistributedCacheEntryOptions, CancellationToken>((k, b, o, t) => stored = b)
-                 .Returns(Task.CompletedTask);
+        var cacheKey = "list-cache-hit";
+        var expected = new List<CacheItem>
+        {
+            new() { Name = "A" },
+            new() { Name = "B" }
+        };
+        var payload = JsonSerializer.SerializeToUtf8Bytes<IList<CacheItem>>(expected);
+        var distributedCache = new Mock<IDistributedCache>();
+        distributedCache.Setup(cache => cache.Get(cacheKey)).Returns(payload);
 
-        var repo = CreateRepo(mockCache);
-        var result = await repo.PagingCacheAsync(cacheKey, () => Task.FromResult(expected));
+        var repository = CreateRepository(distributedCache);
+
+        var result = repository.ListCache<CacheItem>(cacheKey, () => throw new InvalidOperationException("fallback should not be called"));
+
+        CollectionAssert.AreEqual(expected.Select(item => item.Name).ToList(), result.Select(item => item.Name).ToList());
+    }
+
+    [TestMethod]
+    public void PagingCache_CacheMiss_StoresAndReturnsPagingModel()
+    {
+        var cacheKey = "paging-cache";
+        var paging = new PagingModel(0, 2);
+        var expected = new PagingResultsModel<string>(paging, 5, new List<string> { "X", "Y" });
+        var distributedCache = new Mock<IDistributedCache>();
+        distributedCache.Setup(cache => cache.Get(cacheKey)).Returns((byte[]?)null);
+
+        byte[]? storedPayload = null;
+        distributedCache
+            .Setup(cache => cache.Set(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>()))
+            .Callback<string, byte[], DistributedCacheEntryOptions>((_, payload, _) => storedPayload = payload);
+
+        var repository = CreateRepository(distributedCache);
+
+        var result = repository.PagingCache(cacheKey, () => expected);
 
         Assert.AreEqual(expected.TotalRecordCount, result.TotalRecordCount);
-        CollectionAssert.AreEqual((List<string>)expected.Results, (List<string>)result.Results);
-        Assert.IsNotNull(stored);
+        Assert.AreEqual(expected.PageRecordCount, result.PageRecordCount);
+        CollectionAssert.AreEqual(expected.Results.ToList(), result.Results.ToList());
+        Assert.IsNotNull(storedPayload);
     }
 
     [TestMethod]
-    public void PagingCache_CacheMiss_StoresAndReturns()
+    public void ReadCache_InvalidCachedData_ThrowsJsonException()
     {
-        var cacheKey = "paging";
-        var paging = new PagingModel(0, 10);
-        var expected = new PagingResultsModel<string>(paging, 2, new List<string> { "x", "y" });
-        var mockCache = new Mock<IDistributedCache>();
-        mockCache.Setup(c => c.Get(cacheKey)).Returns((byte[]?)null);
-        byte[]? stored = null;
-        mockCache.Setup(c => c.Set(cacheKey, It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>()))
-                 .Callback<string, byte[], DistributedCacheEntryOptions>((k, b, o) => stored = b);
+        var distributedCache = new Mock<IDistributedCache>();
+        distributedCache.Setup(cache => cache.Get("bad-json")).Returns(System.Text.Encoding.UTF8.GetBytes("not-json"));
 
-        var repo = CreateRepo(mockCache);
-        var result = repo.PagingCache(cacheKey, () => expected);
+        var repository = CreateRepository(distributedCache);
 
-        Assert.AreEqual(expected.TotalRecordCount, result.TotalRecordCount);
-        CollectionAssert.AreEqual((List<string>)expected.Results, (List<string>)result.Results);
-        Assert.IsNotNull(stored);
+        Assert.ThrowsException<JsonException>(() => repository.ReadCache("bad-json", () => new CacheItem()));
     }
 }

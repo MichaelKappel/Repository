@@ -17,7 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MichaelKappel.Repositories.EntityFrameworkRepositoryBase\MichaelKappel.Repositories.EntityFrameworkRepositoryBase.csproj" />
+    <ProjectReference Include="..\ExampleImplementation.Repositories\ExampleImplementation.Repositories.csproj" />
+    <ProjectReference Include="..\ExampleImplementation.Website\ExampleImplementation.Website.csproj" />
   </ItemGroup>
 
 </Project>

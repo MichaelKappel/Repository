@@ -1,3 +1,7 @@
+using ExampleImplementation.Repositories.Abstractions;
+using ExampleImplementation.Repositories.Repositories;
+using ExampleImplementation.Repositories.Services;
+
 namespace ExampleImplementation.Website
 {
     public class Program
@@ -8,6 +12,8 @@ namespace ExampleImplementation.Website
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+            builder.Services.AddSingleton<IProductCatalogRepository, InMemoryProductCatalogRepository>();
+            builder.Services.AddScoped<IProductCatalogService, ProductCatalogService>();
 
             var app = builder.Build();
 

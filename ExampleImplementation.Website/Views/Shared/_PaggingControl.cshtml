@@ -1,11 +1,11 @@
-﻿@using ExampleImplementation.Website.Models.ViewModels
+@using ExampleImplementation.Website.Models.ViewModels
 
 @model PaggingControlViewModel
 
 @{
     Int32 startingPageIndex = 0;
     Int32 endingPageIndex = Model.PageCount - 1;
-    Int32 halfMaximumPageLinks = (Int32)Math.Floor(Model.MaximumPageLinks/2M);
+    Int32 halfMaximumPageLinks = (Int32)Math.Floor(Model.MaximumPageLinks / 2M);
 
     if (Model.PageCount > Model.MaximumPageLinks)
     {
@@ -25,7 +25,6 @@
             startingPageIndex = possibleStartingPageIndex;
         }
     }
-
 }
 
 @if (Model.PageCount > 1)
@@ -38,6 +37,7 @@
                     <a class="page-link" asp-area=""
                        asp-controller="@Model.Controller" asp-action="@Model.Action"
                        asp-route-id="@Model.RouteId"
+                       asp-route-searchText="@Model.SearchText"
                        asp-route-pageIndex="0"
                        asp-route-pageSize="@Model.PageSize">First..</a>
                 </li>
@@ -53,6 +53,7 @@
                     <a class="page-link" asp-area=""
                        asp-controller="@Model.Controller" asp-action="@Model.Action"
                        asp-route-id="@Model.RouteId"
+                       asp-route-searchText="@Model.SearchText"
                        asp-route-pageIndex="@Model.PreviousPageIndex.Value"
                        asp-route-pageSize="@Model.PageSize">Previous</a>
                 </li>
@@ -76,6 +77,7 @@
                         <a class="page-link" asp-area=""
                            asp-controller="@Model.Controller" asp-action="@Model.Action"
                            asp-route-id="@Model.RouteId"
+                           asp-route-searchText="@Model.SearchText"
                            asp-route-pageIndex="@iPageIndex"
                            asp-route-pageSize="@Model.PageSize">@(iPageIndex + 1)</a>
                     </li>
@@ -88,6 +90,7 @@
                     <a class="page-link" asp-area=""
                        asp-controller="@Model.Controller" asp-action="@Model.Action"
                        asp-route-id="@Model.RouteId"
+                       asp-route-searchText="@Model.SearchText"
                        asp-route-pageIndex="@Model.NextPageIndex.Value"
                        asp-route-pageSize="@Model.PageSize">Next</a>
                 </li>
@@ -103,7 +106,8 @@
                     <a class="page-link" asp-area=""
                        asp-controller="@Model.Controller" asp-action="@Model.Action"
                        asp-route-id="@Model.RouteId"
-                       asp-route-pageIndex="@(Model.PageCount-1)"
+                       asp-route-searchText="@Model.SearchText"
+                       asp-route-pageIndex="@(Model.PageCount - 1)"
                        asp-route-pageSize="@Model.PageSize">...Last</a>
                 </li>
             }

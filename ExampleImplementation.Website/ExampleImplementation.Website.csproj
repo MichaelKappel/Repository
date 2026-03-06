@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ExampleImplementation.Repositories\ExampleImplementation.Repositories.csproj" />
     <ProjectReference Include="..\MichaelKappel.Repositories.Common\MichaelKappel.Repositories.Common.csproj" />
   </ItemGroup>
 

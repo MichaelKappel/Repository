@@ -13,11 +13,10 @@
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
     <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
     <PackageReference Include="coverlet.collector" Version="3.2.0" />
-    <PackageReference Include="Moq" Version="4.18.4" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MichaelKappel.Repositories.EntityFrameworkRepositoryBase\MichaelKappel.Repositories.EntityFrameworkRepositoryBase.csproj" />
+    <ProjectReference Include="..\MichaelKappel.Repositories.Common\MichaelKappel.Repositories.Common.csproj" />
   </ItemGroup>
 
 </Project>

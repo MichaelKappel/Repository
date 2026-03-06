@@ -1,48 +1,45 @@
-﻿@using ExampleImplementation.Website.Models.ViewModels
+@using ExampleImplementation.Website.Models.DataModels
+@using ExampleImplementation.Website.Models.ViewModels
 
 @model PaggingGridControlViewModel
+
+@{
+    var columns = typeof(ExampleDataViewModel).GetProperties();
+}
+
+<div class="mb-2 text-muted small">
+    Showing @Model.PageRecordCount of @Model.TotalRecordCount total products.
+</div>
 
 <table class="border table table-sm table-striped">
     <thead>
         <tr>
-            <td colspan="17">
-                    @Html.Partial("_PaggingControl", Model)
+            <td colspan="10">
+                @await Html.PartialAsync("_PaggingControl", Model)
             </td>
         </tr>
         <tr>
-            @foreach (var property in Model.Results.GetType().GetProperties())
+            @foreach (var property in columns)
             {
                 <th>@property.Name</th>
             }
         </tr>
     </thead>
     <tbody>
-        @if (Model.Results.Count > 0)
+        @foreach (var row in Model.Results)
         {
-            @for (var i = 0; i < Model.Results.Count; i++)
-            {
-                <tr>
-                    @foreach (var property in Model.Results[i].GetType().GetProperties())
-                    {
-                        <td>
-                            @try
-                            {
-                                @property.GetValue(Model.Results[i])
-                            }
-                            catch (Exception ex)
-                            {
-                                <span>@ex.Message</span>
-                            }
-                        </td>
-                    }
-                </tr>
-            }
+            <tr>
+                @foreach (var property in columns)
+                {
+                    <td>@property.GetValue(row)</td>
+                }
+            </tr>
         }
     </tbody>
     <tfoot>
         <tr>
-            <td colspan="17">
-                @Html.Partial("_PaggingControl", Model)
+            <td colspan="10">
+                @await Html.PartialAsync("_PaggingControl", Model)
             </td>
         </tr>
     </tfoot>

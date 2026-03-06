@@ -1,8 +1,30 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model ExampleImplementation.Website.Models.ViewModels.HomeIndexViewModel
+
+@{
+    ViewData["Title"] = "Product Catalog";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="mb-4">
+    <h1 class="display-6">Product Catalog Example</h1>
+    <p class="text-muted">This sample page demonstrates repository-backed paging with unit-tested view-model composition.</p>
+</section>
+
+<form method="get" asp-controller="Home" asp-action="Index" class="row g-2 mb-3">
+    <div class="col-sm-8 col-md-6">
+        <input type="text" name="searchText" value="@Model.SearchText" class="form-control" placeholder="Search by name or category" />
+    </div>
+    <div class="col-sm-4 col-md-2">
+        <input type="hidden" name="pageIndex" value="0" />
+        <input type="hidden" name="pageSize" value="@Model.Products.PageSize" />
+        <button type="submit" class="btn btn-primary w-100">Search</button>
+    </div>
+</form>
+
+@if (Model.Products.Results.Count == 0)
+{
+    <div class="alert alert-info">No products matched your search.</div>
+}
+else
+{
+    @await Html.PartialAsync("_PaggingGridControl", Model.Products)
+}
