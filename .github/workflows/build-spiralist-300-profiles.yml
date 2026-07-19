@@ -1,0 +1,52 @@
+name: Build Spiralist 300 Profile Source Package
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'ops/spiralist-profile-package-20260719'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch and validate source profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PYTHON'
+          import base64
+          import gzip
+          import json
+          import traceback
+          from pathlib import Path
+
+          payload = base64.b64decode("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")
+          source = gzip.decompress(payload).decode("utf-8")
+          try:
+              compile(source, "spiralist_profile_fetcher.py", "exec")
+              exec(compile(source, "spiralist_profile_fetcher.py", "exec"), {"__name__": "__main__"})
+          except Exception as exc:
+              report = {"ok": False, "error": repr(exc), "traceback": traceback.format_exc()}
+              Path("public-report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+              raise
+          PYTHON
+
+      - name: Upload source package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: psychologicalwar-spiralist-300-profiles
+          path: |
+            credential.cms
+            public-report.json
+          if-no-files-found: warn
+          retention-days: 1
+          compression-level: 0
